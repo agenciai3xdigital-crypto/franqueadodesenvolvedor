@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Portal do Desenvolvedor — Rede Pop Pet Center</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" integrity="sha384-GFr3yTh5lJznCbZfpTtXnwboFsxqtTQoeTZCRHhE0579KrRmlCzen5AA8ohaB5ug" crossorigin="anonymous" defer></script>
 <style>
   :root{
     --verde:#0B3D2E; --verde-2:#14523E; --verde-3:#1E6B50;
@@ -338,6 +338,9 @@
 const SUPABASE_URL = "https://nsbchvzqcsmkywhrxjpi.supabase.co";        // ex.: https://xxxx.supabase.co
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zYmNodnpxY3Nta3l3aHJ4anBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzOTUyNzAsImV4cCI6MjA5ODk3MTI3MH0.nAq_GTEZM8hAv4RZkil5kk8Akton8UPdnrLxjOhQTlE";   // chave "anon public"
 
+/* ---------- Escape de HTML para valores vindos do banco/usuário ---------- */
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
 /* ---------- Constantes de negócio ---------- */
 const STATUS = {
   novo:{rot:'Novo',pago:0}, analise:{rot:'Em análise',pago:0}, cof:{rot:'COF enviada',pago:0},
@@ -510,8 +513,8 @@ async function abrirApp(){
   document.getElementById('pillPerfil').textContent = admin ? 'Gestor · Expansão' : 'Desenvolvedor';
   document.getElementById('pillPerfil').className = 'pill'+(admin?' gestor':'');
   document.getElementById('zonaInfo').innerHTML = admin
-    ? `Olá, <b>${eu.nome}</b> · visão consolidada da rede`
-    : `Olá, <b>${eu.nome}</b> · Zona de Atuação: <b>${eu.zona||'—'}</b> · você enxerga apenas os leads que originou`;
+    ? `Olá, <b>${esc(eu.nome)}</b> · visão consolidada da rede`
+    : `Olá, <b>${esc(eu.nome)}</b> · Zona de Atuação: <b>${esc(eu.zona||'—')}</b> · você enxerga apenas os leads que originou`;
   irPara(admin?'dash':'leads');
 }
 
@@ -587,20 +590,20 @@ function renderLeads(){
 
   let html='';
   for(const [g,arr] of grupos){
-    if(g) html+=`<div class="grupoDev">${g}</div>`;
+    if(g) html+=`<div class="grupoDev">${esc(g)}</div>`;
     for(const l of arr){
       const st=STATUS[l.status], com=comissao(l);
       const prefVencida = l.pref_regional && ['novo','analise'].includes(l.status) && diasDesde(l.criado_em)>15;
       html+=`
       <article class="lead st-${l.status}">
         <div>
-          <div class="nome">${l.nome}</div>
-          <div class="meta"><b>${l.cidade}</b> · ${l.capital||''} · ${l.origem||''}${l.whatsapp?` · <span class="mono">${l.whatsapp}</span>`:''}${l.email?` · ${l.email}`:''}</div>
-          ${(l.whatsapp||l.email)?`<div class="meta mono" style="font-size:12px">${l.whatsapp?'☎ '+l.whatsapp:''}${l.whatsapp&&l.email?' · ':''}${l.email||''}</div>`:''}
+          <div class="nome">${esc(l.nome)}</div>
+          <div class="meta"><b>${esc(l.cidade)}</b> · ${esc(l.capital||'')} · ${esc(l.origem||'')}${l.whatsapp?` · <span class="mono">${esc(l.whatsapp)}</span>`:''}${l.email?` · ${esc(l.email)}`:''}</div>
+          ${(l.whatsapp||l.email)?`<div class="meta mono" style="font-size:12px">${l.whatsapp?'☎ '+esc(l.whatsapp):''}${l.whatsapp&&l.email?' · ':''}${esc(l.email||'')}</div>`:''}
           <span class="status">${st.rot}</span>
           ${l.pref_regional?`<span class="pref">⚑ Preferência regional · ${prefVencida?'<b>prazo de 15d vencido</b>':'titular notificado (15d)'}</span>`:''}
         </div>
-        <div class="carimbo"><b>Carimbo de originação</b>${fmtTS(l.criado_em)}<br>${carimboDev(l.dev_id)}</div>
+        <div class="carimbo"><b>Carimbo de originação</b>${fmtTS(l.criado_em)}<br>${esc(carimboDev(l.dev_id))}</div>
         <div class="comLinha">
           ${l.modalidade?`<span class="valor">${MOD[l.modalidade].rot} · ${fmt(com)}</span>
             <div class="barra" role="img" aria-label="${st.pago*100}% liberado"><i style="width:${st.pago*100}%"></i></div>
@@ -632,7 +635,7 @@ function renderComissoes(){
     <div class="kpi destaque"><div class="rot">Liberado até hoje</div><div class="val">${fmt(tot.lib)}</div></div>
     <div class="kpi"><div class="rot">Taxa de referência</div><div class="val">${fmt(taxa)}</div></div>`;
   document.getElementById('tbodyCom').innerHTML = base.map(l=>`
-    <tr><td>${l.nome}<br><span style="font-size:12px;color:var(--tinta-2)">${l.cidade}${eu.papel==='admin'?' · '+nomeDev(l.dev_id):''}</span></td>
+    <tr><td>${esc(l.nome)}<br><span style="font-size:12px;color:var(--tinta-2)">${esc(l.cidade)}${eu.papel==='admin'?' · '+esc(nomeDev(l.dev_id)):''}</span></td>
     <td>${MOD[l.modalidade].rot}</td><td>${STATUS[l.status].rot}</td>
     <td class="num">${fmt(comissao(l))}</td><td class="num">${fmt(comissao(l)*STATUS[l.status].pago)}</td></tr>`).join('')
     || `<tr><td colspan="5" style="text-align:center;color:var(--tinta-2)">Sem leads com comissão ainda.</td></tr>`;
@@ -672,7 +675,7 @@ function renderDash(){
   linhas.push({nome:'Institucional (franqueadora)', n:leads.filter(l=>!l.dev_id).length, f:leads.filter(l=>!l.dev_id&&['assinado','inaugurado'].includes(l.status)).length});
   const maxR = Math.max(1,...linhas.map(x=>x.n));
   document.getElementById('rankingDev').innerHTML = linhas.sort((a,b)=>b.n-a.n).map(x=>
-    `<div class="barraH ouro"><div class="rotBar"><span>${x.nome}</span><b>${x.n} leads · ${x.f} fechados</b></div><div class="trilho"><i style="width:${Math.round(100*x.n/maxR)}%"></i></div></div>`).join('');
+    `<div class="barraH ouro"><div class="rotBar"><span>${esc(x.nome)}</span><b>${x.n} leads · ${x.f} fechados</b></div><div class="trilho"><i style="width:${Math.round(100*x.n/maxR)}%"></i></div></div>`).join('');
 
   document.getElementById('inpTaxa').value = taxa;
   renderSugestoes();
@@ -722,7 +725,7 @@ function renderSugestoes(){
   if(!sug.length) sug.push({n:'info', t:'Nenhuma pendência crítica', x:'Pipeline saudável: sem leads parados, prazos de preferência em dia e desenvolvedores ativos. Bom momento para acelerar a originação.'});
 
   document.getElementById('sugestoes').innerHTML = sug.map(s=>
-    `<div class="sug ${s.n}"><div class="nivel">${{alta:'Prioridade alta',media:'Prioridade média',info:'Observação'}[s.n]}</div><div class="tit">${s.t}</div><div class="txt">${s.x}</div></div>`).join('');
+    `<div class="sug ${s.n}"><div class="nivel">${{alta:'Prioridade alta',media:'Prioridade média',info:'Observação'}[s.n]}</div><div class="tit">${esc(s.t)}</div><div class="txt">${esc(s.x)}</div></div>`).join('');
 }
 
 /* =========================================================
@@ -782,10 +785,10 @@ async function salvarTaxa(){
    ========================================================= */
 function renderUsuarios(){
   document.getElementById('tbodyUsuarios').innerHTML = perfis.map(p=>`
-    <tr><td>${p.nome}${p.fr?` <span class="mono" style="font-size:11px;color:var(--tinta-2)">${p.fr}</span>`:''}<br><span style="font-size:12px;color:var(--tinta-2)">${p.email||''}</span></td>
+    <tr><td>${esc(p.nome)}${p.fr?` <span class="mono" style="font-size:11px;color:var(--tinta-2)">${esc(p.fr)}</span>`:''}<br><span style="font-size:12px;color:var(--tinta-2)">${esc(p.email||'')}</span></td>
     <td><span class="tagPapel ${p.papel==='admin'?'admin':'dev'}">${p.papel==='admin'?'Admin':'Desenvolvedor'}</span>${p.ativo?'':' <span class="tagInativo">inativo</span>'}</td>
-    <td style="font-size:13px">${p.zona||'—'}</td>
-    <td>${p.papel!=='admin'?`<button class="linkAcao" onclick="acaoAtivo('${p.id}',${!p.ativo})">${p.ativo?'Desativar':'Reativar'}</button>`:''}</td></tr>`).join('');
+    <td style="font-size:13px">${esc(p.zona||'—')}</td>
+    <td>${p.papel!=='admin'?`<button class="linkAcao" onclick="acaoAtivo('${esc(p.id)}',${!p.ativo})">${p.ativo?'Desativar':'Reativar'}</button>`:''}</td></tr>`).join('');
 }
 async function acaoAtivo(id,ativo){
   try{ await db.alternarAtivo(id,ativo); await db.carregar(); renderUsuarios(); toast(ativo?'Acesso reativado.':'Acesso desativado.'); }
@@ -810,7 +813,7 @@ function montarSelectDev(){
   if(eu.papel!=='admin') return;
   const sel=document.getElementById('fDev');
   sel.innerHTML = `<option value="">Institucional (franqueadora)</option>` +
-    perfis.filter(p=>p.papel==='desenvolvedor'&&p.ativo).map(p=>`<option value="${p.id}">${p.nome}</option>`).join('');
+    perfis.filter(p=>p.papel==='desenvolvedor'&&p.ativo).map(p=>`<option value="${esc(p.id)}">${esc(p.nome)}</option>`).join('');
   sel.onchange = ()=>{ document.getElementById('campoMod').hidden = !sel.value; };
   document.getElementById('campoMod').hidden = true;
 }
